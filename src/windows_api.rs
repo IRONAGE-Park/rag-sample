@@ -254,18 +254,12 @@ unsafe fn create_search_query(query_file_name: String) -> SearchLocalFileResult<
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QuerySelectColumns"))?;
     query_helper
         .SetQueryWhereRestrictions(w!(
-            "AND CONTAINS(System.FileExtension, 'pdf') AND System.Size < 5000000"
+            "AND System.FileExtension = '.pdf' AND System.Size < 5000000"
         ))
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QueryWhereRestrictions"))?;
     query_helper
-        .SetQueryMaxResults(1000)
+        .SetQueryMaxResults(100)
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QueryMaxResults"))?;
-    query_helper
-        .SetQuerySorting(w!("System.Search.Rank DESC"))
-        .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QuerySorting"))?;
-    query_helper
-        .SetQuerySorting(w!("System.DateModified DESC"))
-        .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QuerySorting"))?;
 
     query_helper
         .GenerateSQLFromUserQuery(string_to_pcwstr(query_file_name))
