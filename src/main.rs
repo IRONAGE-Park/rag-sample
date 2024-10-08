@@ -1,10 +1,22 @@
-use std::time::SystemTime;
+use std::{io::Write, time::SystemTime};
 
+use futures_util::StreamExt;
+use langchain_rust::{
+    document_loaders::{pdf_extract_loader::PdfExtractLoader, Loader},
+    embedding::OllamaEmbedder,
+    schemas::Document as LangchainDocument,
+    vectorstore::{
+        qdrant::{Qdrant, StoreBuilder},
+        VecStoreOptions, VectorStore,
+    },
+};
 use tantivy::{
-    collector::TopDocs, doc, query::QueryParser, schema::*, DocAddress, Index, IndexWriter, Score,
+    collector::TopDocs, doc, query::QueryParser, schema::*, DocAddress, Document, Index,
+    IndexWriter, Score,
 };
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args: Vec<String> = std::env::args().collect();
     let now = SystemTime::now();
 
@@ -16,8 +28,9 @@ fn main() {
     let body = schema_builder.add_text_field("body", TEXT | STORED);
     let schema = schema_builder.build();
 
-    // let index = Index::create_in_dir("./index", schema.clone()).expect("Failed to create index");
-    let index = Index::open_in_dir("./index").expect("Failed to open index");
+    let index = Index::open_in_dir("./index").unwrap_or_else(|_| {
+        Index::create_in_dir("./index", schema.clone()).expect("Failed to create index")
+    });
     let mut index_writer: IndexWriter = index
         .writer(1_000_000_000)
         .expect("Failed to create index writer");
@@ -80,6 +93,59 @@ fn main() {
             "Time: {}s",
             elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9
         );
+    }
+
+    let embedder = OllamaEmbedder::default().with_model("nomic-embed-text");
+    let client = Qdrant::from_url("http://localhost:6334").build().unwrap();
+    client.delete_collection("langchain-rs").await.unwrap();
+    let store = StoreBuilder::new()
+        .embedder(embedder)
+        .client(client)
+        .collection_name("langchain-rs")
+        .build()
+        .await
+        .unwrap();
+
+    for (name, path, size) in files.iter() {
+        let path = std::path::Path::new(path.strip_prefix("file:").unwrap());
+        let loader = PdfExtractLoader::from_path(path).expect("Failed to load pdf");
+        let docs = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|d| d.unwrap())
+            .collect::<Vec<LangchainDocument>>()
+            .await;
+
+        store
+            .add_documents(&docs, &VecStoreOptions::default())
+            .await
+            .unwrap();
+        if let Ok(elapsed) = now.elapsed() {
+            println!(
+                "Time: {}s",
+                elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9
+            );
+        }
+    }
+
+    print!("Query > ");
+    std::io::stdout().flush().unwrap();
+    let mut query = String::new();
+    std::io::stdin().read_line(&mut query).unwrap();
+
+    let results = store
+        .similarity_search(&query, 3, &VecStoreOptions::default())
+        .await
+        .unwrap();
+
+    if results.is_empty() {
+        println!("No results found.");
+        return;
+    } else {
+        results.iter().for_each(|r| {
+            println!("Document: {:?}", r);
+        });
     }
 }
 
