@@ -254,7 +254,7 @@ unsafe fn create_search_query(query_file_name: String) -> SearchLocalFileResult<
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QuerySelectColumns"))?;
     query_helper
         .SetQueryWhereRestrictions(w!(
-            "AND System.FileExtension = '.pdf' AND System.Size < 5000000"
+            "AND System.FileExtension = '.pdf' AND System.Size < 10000000"
         ))
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QueryWhereRestrictions"))?;
     query_helper
