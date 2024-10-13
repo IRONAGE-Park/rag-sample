@@ -15,7 +15,7 @@ impl TantivyStore {
     pub fn build() -> Result<Self, String> {
         let mut schema_builder = Schema::builder();
 
-        let filepath = schema_builder.add_text_field("filepath", TEXT | STORED);
+        let file_path = schema_builder.add_text_field("file_path", TEXT | STORED);
         let body = schema_builder.add_text_field("body", TEXT | STORED);
         let schema = schema_builder.build();
 
@@ -31,21 +31,22 @@ impl TantivyStore {
             schema,
             index,
             index_writer,
-            fields: Fields {
-                file_path: filepath,
-                body,
-            },
+            fields: Fields { file_path, body },
         })
     }
 
-    pub fn write_document(&mut self, path: &std::path::Path, text: String) -> Result<(), String> {
-        let file_path = self.fields.file_path;
-        let body = self.fields.body;
+    pub fn write_document(
+        &mut self,
+        file_path: &std::path::Path,
+        text: String,
+    ) -> Result<(), String> {
+        let file_path_field = self.fields.file_path;
+        let body_field = self.fields.body;
 
         self.index_writer
             .add_document(doc!(
-                file_path => path.to_str().unwrap_or(""),
-                body => text
+                file_path_field => file_path.to_str().unwrap_or(""),
+                body_field => text
             ))
             .map(|_| ())
             .map_err(|e| e.to_string())

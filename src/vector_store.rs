@@ -33,12 +33,12 @@ impl QdrantStore {
 
     pub async fn write_document(
         &mut self,
-        path: &std::path::Path,
+        file_path: &std::path::Path,
         text: String,
     ) -> Result<(), String> {
         let document = Document::new(text).with_metadata(HashMap::from([(
             "path".to_string(),
-            json!(path.to_str().unwrap_or("")),
+            json!(file_path.to_str().unwrap_or("")),
         )]));
 
         self.store

@@ -1,17 +1,11 @@
-use std::{
-    collections::HashMap,
-    io::{Cursor, Write},
-};
+use std::io::Write;
 
-use futures_util::StreamExt;
 use pdf::{
     content::Op,
     enc::StreamFilter,
     file::FileOptions,
     object::{Resolve, XObject},
-    primitive::Primitive,
 };
-use rusty_tesseract::{image::ImageReader, Args, Image};
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +21,7 @@ async fn main() {
     let pdf_files: Vec<(&String, Result<String, String>)> = files
         .iter()
         .filter(|(name, _, _)| name.ends_with(".pdf"))
-        .map(|(name, path, _)| (name, pdf_reader::read_pdf_file(path)))
+        .map(|(name, path, _)| (name, pdf_reader::read_pdf_file(std::path::Path::new(path))))
         .collect();
 
     println!("Committing {} files...", files.len());
@@ -72,59 +66,48 @@ async fn main() {
                 Some(StreamFilter::JBIG2Decode(_)) => "jbig2",
                 Some(StreamFilter::JPXDecode) => "jp2k",
                 Some(StreamFilter::FlateDecode(_)) => "png",
-                // Some(StreamFilter::CCITTFaxDecode(_)) => {
-                //     data = fax::tiff::wrap(&data, img.width, img.height).into();
-                //     "tiff"
-                // }
+                Some(StreamFilter::CCITTFaxDecode(_)) => {
+                    data = fax::tiff::wrap(&data, img.width, img.height).into();
+                    "tiff"
+                }
                 _ => continue,
             };
 
-            let image_reader = ImageReader::new(Cursor::new(&data))
-                .with_guessed_format()
-                .unwrap();
-            if image_reader.format().is_none() {
-                continue;
-            }
-            let fname = format!("extracted_image_{}.{}", i, ext);
-            println!("image: {:?}", fname);
-            let img = image_reader.decode().unwrap();
-
-            let args = Args {
-                lang: "kor+eng".to_string(),
-                config_variables: HashMap::new(),
-                dpi: None,
-                psm: None,
-                oem: None,
-            };
-            let img = Image::from_dynamic_image(&img).expect("Failed to convert image");
-            let output = rusty_tesseract::image_to_string(&img, &args).unwrap();
-            // println!("Image {}: {}", i, output);
+            let fname = format!("./images/{}_extracted_image_{}.{}", name, i, ext);
             std::fs::write(fname.as_str(), data.clone()).unwrap();
         }
 
-        // println!("File pages {:?}", file.num_pages());
-        // file.pages().for_each(|page| {
-        //     let page = page.unwrap();
-        //     let contents = page.contents.as_ref().unwrap();
-        //     let op = contents.operations(&resolver).unwrap();
-        //     let content: String = op
-        //         .iter()
-        //         .map(|o| match o {
-        //             Op::TextDraw { text } => text.to_string_lossy(),
-        //             Op::TextDrawAdjusted { array } => array
-        //                 .iter()
-        //                 .map(|p| p.to_string())
-        //                 .collect::<Vec<String>>()
-        //                 .join(" "),
-        //             _ => String::new(),
-        //         })
-        //         .collect();
+        println!("File pages {:?}", file.num_pages());
+        file.pages().for_each(|page| {
+            if page.is_err() {
+                println!("Error: {:?}", page.err());
+                return;
+            }
+            let page = page.unwrap();
+            let contents = page.contents.as_ref().unwrap();
+            let op = contents.operations(&resolver).unwrap();
+            let content: String = op
+                .iter()
+                .map(|o| match o {
+                    Op::TextDraw { text } => {
+                        println!("Text: {:?}", text);
+                        text.to_string_lossy()
+                    }
+                    Op::TextDrawAdjusted { array } => array
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" "),
+                    _ => String::new(),
+                })
+                .collect();
 
-        //     println!("Contents: {:?}", content);
-        // });
+            // println!("Contents: {:?}", content);
+        });
     }
 }
 
+mod ocr;
 mod pdf_reader;
 mod text_store;
 mod vector_store;

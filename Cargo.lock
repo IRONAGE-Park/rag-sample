@@ -2820,9 +2820,11 @@ dependencies = [
 name = "rag-sample"
 version = "0.1.0"
 dependencies = [
+ "fax",
  "futures-util",
  "hwp",
  "langchain-rust",
+ "lopdf 0.34.0",
  "pdf",
  "pdf-extract",
  "rusty-tesseract",
