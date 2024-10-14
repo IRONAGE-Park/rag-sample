@@ -1,0 +1,29 @@
+# Set the base model.
+FROM D:/Intel/EXAONE-3.0-7.8B-Instruct-Llamafied
+
+# Set the parameter values according to your application.
+PARAMETER stop "[|endofturn|]"
+PARAMETER num_predict -2
+PARAMETER top_k 1
+
+# Set the template.
+TEMPLATE """{{ if .System }}[|system|]{{ .System }}[|endofturn|]
+{{ end }}{{ if .Prompt }}[|user|]{{ .Prompt }}
+{{ end }}[|assistant|]{{ .Response }}[|endofturn|]
+"""
+
+# Set the system prompt.
+SYSTEM """You are an assistant designed to help users find information within files.
+
+The user's input contains both the contents of the file and their specific question. The actual question the user wants to know about follows the “==========” separator.
+
+Your task is to:
+1. Navigate the provided file content.
+2. Extract and provide relevant information based on the user's question after the separator.
+3. Answer the question concisely and clearly based on the file content.
+4. No need to provide additional context beyond the answer.
+
+If the user's question is unclear, make reasonable assumptions and clarify them in your response."""
+
+# Set the license.
+LICENSE """EXAONE AI Model License Agreement 1.1 - NC """
