@@ -90,6 +90,8 @@ pub fn read_pdf_by_lopdf(file_path: &std::path::Path) -> Result<String, String> 
             .extract_text(&[page_number])
             .map_err(|op| op.to_string())?;
         println!("Page {}: {}", page_number, page);
+        let page = page.replace(" \n", " ");
+        std::fs::write(format!("./assets/page_{}.txt", page_number), page).unwrap();
     }
 
     Ok(String::new())
