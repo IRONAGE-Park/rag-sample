@@ -9,7 +9,6 @@ futures-util = "0.3.31"
 hwp = "0.2.0"
 langchain-rust = { version = "4.6.0", features = ["ollama", "pdf-extract", "qdrant"] }
 lopdf = "0.34.0"
-openvino = "0.7.3"
 pdf = "0.9.0"
 pdf-extract = "0.7.10"
 pyo3 = { version = "0.22.4", features = ["auto-initialize"] }
@@ -18,4 +17,13 @@ rusty-tesseract = "1.1.10"
 serde_json = "1.0.128"
 tantivy = "0.22.0"
 tokio = "1.40.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58.0", features = ["Win32_Storage", "Win32_Storage_FileSystem", "Win32_Security", "Win32_System", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Search", "Win32_System_Threading", "Win32_System_Diagnostics", "Win32_System_Diagnostics_ToolHelp"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.26.0"
+core-foundation = "0.10.0"
+core-foundation-sys = "0.8.7"
+core-graphics = "0.24.0"
+objc = "0.2.7"
