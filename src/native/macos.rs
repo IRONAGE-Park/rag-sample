@@ -12,6 +12,7 @@ pub type SearchLocalFileResult<T> = Result<T, SearchLocalFileError>;
 
 #[derive(Debug)]
 pub enum SearchLocalFileError {
+    #[allow(unused)]
     CreateCString(String),
 }
 
