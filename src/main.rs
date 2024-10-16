@@ -51,6 +51,7 @@ async fn main() {
         });
     }
 
+    let time = std::time::SystemTime::now();
     // 4. 파일들을 `Python`으로 전달하여 `Vector Store`에 저장
     let success_length: PyResult<usize> = Python::with_gil(|py| {
         PyModule::from_code_bound(
@@ -109,6 +110,10 @@ async fn main() {
 
         Ok(success_list.len())
     });
+
+    if let Ok(duration) = time.elapsed() {
+        println!("Elapsed Time: {:?}", duration);
+    }
 
     println!(
         "Committing {} files...",
