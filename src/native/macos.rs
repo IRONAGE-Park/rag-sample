@@ -38,28 +38,7 @@ unsafe fn create_search_query(query_file_name: String) -> SearchLocalFileResult<
     let predicate_format: *mut Object = {
         // https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/SpotlightQuery/Concepts/QueryFormat.html#//apple_ref/doc/uid/TP40001849
         let c_string =
-            std::ffi::CString::new(format!("kMDItemDisplayName == \"*{}*\"cd", query_file_name))
-                .map_err(|e| SearchLocalFileError::CreateCString(e.to_string()))?;
-        msg_send![class!(NSString), stringWithUTF8String: c_string.as_ptr()]
-    };
-    let predicate: *mut Object =
-        msg_send![class!(NSPredicate), predicateFromMetadataQueryString: predicate_format];
-    // `NSMetadataQuery`에 predicate 설정
-    let _: () = msg_send![query, setPredicate: predicate];
-
-    Ok(query)
-}
-
-/// Document 탐색 용 Spotlight 쿼리를 생성하는 함수
-unsafe fn create_document_query() -> SearchLocalFileResult<*mut Object> {
-    // `NSMetadataQuery` 객체 생성
-    let query: *mut Object = msg_send![class!(NSMetadataQuery), alloc];
-    let query: *mut Object = msg_send![query, init];
-
-    let predicate_format: *mut Object = {
-        // https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/SpotlightQuery/Concepts/QueryFormat.html#//apple_ref/doc/uid/TP40001849
-        let c_string =
-            std::ffi::CString::new("kMDItemFSName == '*.pdf' || kMDItemFSName == '*.txt'")
+            std::ffi::CString::new(format!("(kMDItemFSName == '*.pdf' || kMDItemFSName == '*.png' || kMDItemFSName == '*.jpeg') && kMDItemDisplayName == \"*{}*\"cd", query_file_name))
                 .map_err(|e| SearchLocalFileError::CreateCString(e.to_string()))?;
         msg_send![class!(NSString), stringWithUTF8String: c_string.as_ptr()]
     };

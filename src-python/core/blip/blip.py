@@ -24,8 +24,8 @@ read_vision_model.reshape({ vision_input_layer.any_name: ov.PartialShape([1, 3, 
 read_text_decoder = core.read_model(TEXT_DECODER_OV)
 
 # load models on device
-ov_vision_model = core.compile_model(read_vision_model, "NPU")
-ov_text_decoder_with_past = core.compile_model(read_text_decoder, "GPU")
+ov_vision_model = core.compile_model(read_vision_model, "CPU")
+ov_text_decoder_with_past = core.compile_model(read_text_decoder, "CPU")
 
 from functools import partial
 from blip_model import text_decoder_forward, OVBlipModel
