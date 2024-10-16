@@ -1,9 +1,76 @@
+
+def initialize_vision_model(path):
+    from pathlib import Path
+    VISION_MODEL_OV = Path("./models/blip_vision_model.xml")
+
+    if VISION_MODEL_OV.exists():
+        return
+
+    import torch
+    from transformers import BlipProcessor, BlipForConditionalGeneration
+    from PIL import Image
+    import openvino as ov
+
+    # 1. Processor와 모델을 로드합니다.
+    model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+    processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+    # 2. 이미지를 불러옵니다.
+    image = Image.open(path)
+
+    # 3. 이미지를 처리하고 캡션을 생성합니다.
+    inputs = processor(image, return_tensors="pt")
+
+    vision_model = model.vision_model
+    vision_model.eval()
+
+    # if openvino model does not exist, convert it to IR
+    with torch.no_grad():
+        ov_vision_model = ov.convert_model(vision_model, example_input=inputs["pixel_values"])
+    ov.save_model(ov_vision_model, VISION_MODEL_OV)
+
+def initialize_text_decoder():
+    from pathlib import Path
+
+    TEXT_DECODER_OV = Path("./models/blip_text_decoder_with_past.xml")
+
+    if TEXT_DECODER_OV.exists():
+        return
+
+    import torch
+    from transformers import BlipForConditionalGeneration
+    import openvino as ov
+
+    # 1. Processor와 모델을 로드합니다.
+    model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+
+    text_decoder = model.text_decoder
+    text_decoder.eval()
+
+    # prepare example inputs
+    input_ids = torch.tensor([[30522]])  # begin of sequence token id
+    attention_mask = torch.tensor([[1]])  # attention mask for input_ids
+    encoder_hidden_states = torch.rand((1, 10, 768))  # encoder last hidden state from text_encoder
+    encoder_attention_mask = torch.ones((1, 10), dtype=torch.long)  # attention mask for encoder hidden states
+    input_dict = {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "encoder_hidden_states": encoder_hidden_states,
+        "encoder_attention_mask": encoder_attention_mask,
+    }
+    text_decoder_outs = text_decoder(**input_dict)
+    # extend input dictionary with hidden states from previous step
+    input_dict["past_key_values"] = text_decoder_outs["past_key_values"]
+
+    text_decoder.config.torchscript = True
+    with torch.no_grad():
+        ov_text_decoder = ov.convert_model(text_decoder, example_input=input_dict)
+    # save model on disk for next usages
+    ov.save_model(ov_text_decoder, TEXT_DECODER_OV)
+
 import torch
-import numpy as np
 import openvino as ov
 from typing import List, Dict
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
-
 
 def init_past_inputs(model_inputs: List):
     """
@@ -20,7 +87,6 @@ def init_past_inputs(model_inputs: List):
         partial_shape[2] = 0
         pkv.append(ov.Tensor(ov.Type.f32, partial_shape.get_shape()))
     return pkv
-
 
 def postprocess_text_decoder_outputs(output: Dict):
     """
@@ -40,7 +106,6 @@ def postprocess_text_decoder_outputs(output: Dict):
         attentions=None,
         cross_attentions=None,
     )
-
 
 def text_decoder_forward(
     ov_text_decoder_with_past: ov.CompiledModel,
@@ -130,5 +195,4 @@ class OVBlipModel:
             encoder_attention_mask=image_attention_mask,
             **generate_kwargs,
         )
-
         return outputs

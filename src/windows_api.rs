@@ -18,32 +18,50 @@ pub type SearchLocalFileResult<T> = Result<T, SearchLocalFileError>;
 
 #[derive(Debug)]
 pub enum SearchLocalFileError {
+    #[allow(unused)]
     CreateAccessor(String),
     /// (Error Message, Cast to)
+    #[allow(unused)]
     Cast(String, &'static str),
     /// (Error Message, column_index, row_index)
+    #[allow(unused)]
     GetData(String, usize, usize),
     /// (Error Message, column_index, row_index)
+    #[allow(unused)]
     ReleaseAccessor(String, usize, usize),
     /// (Error Message, column_index)
+    #[allow(unused)]
     ReleaseRows(String, usize),
     /// (Error Message, Cast to)
+    #[allow(unused)]
     CoCreateInstance(String, &'static str),
+    #[allow(unused)]
     GetDataSource(String),
+    #[allow(unused)]
     CreateSession(String),
+    #[allow(unused)]
     CreateCommand(String),
+    #[allow(unused)]
     DBInitialize(String),
     /// (Error Message, SQL Query)
+    #[allow(unused)]
     SetCommandText(String, String),
     /// (Error Message, SQL Query)
+    #[allow(unused)]
     Exeute(String, String),
     /// (SQL Query)
+    #[allow(unused)]
     NotMatched(String),
+    #[allow(unused)]
     GetCatalog(String),
+    #[allow(unused)]
     GetQueryHelper(String),
     /// (Error Message, Set Query Kind)
+    #[allow(unused)]
     SetQuery(String, &'static str),
+    #[allow(unused)]
     GenerateSQLFromUserQuery(String),
+    #[allow(unused)]
     OleInitialize(String),
 }
 
@@ -254,7 +272,7 @@ unsafe fn create_search_query(query_file_name: String) -> SearchLocalFileResult<
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QuerySelectColumns"))?;
     query_helper
         .SetQueryWhereRestrictions(w!(
-            "AND System.FileExtension = '.pdf' AND System.Size < 10000000"
+            "AND (System.FileExtension = '.pdf' OR System.FileExtension = '.png') AND System.Size < 10000000"
         ))
         .map_err(|e| SearchLocalFileError::SetQuery(e.to_string(), "QueryWhereRestrictions"))?;
     query_helper

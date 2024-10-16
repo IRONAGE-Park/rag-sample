@@ -19,9 +19,9 @@ impl TantivyStore {
         let body = schema_builder.add_text_field("body", TEXT | STORED);
         let schema = schema_builder.build();
 
-        let index = Index::open_in_dir("./index")
+        let index = Index::open_in_dir("./db/tantivy")
             .map_or_else(
-                |_| Index::create_in_dir("./index", schema.clone()),
+                |_| Index::create_in_dir("./db/tantivy", schema.clone()),
                 |index| Ok(index),
             )
             .map_err(|e| e.to_string())?;

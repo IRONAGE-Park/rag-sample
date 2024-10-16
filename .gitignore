@@ -1,6 +1,11 @@
-/assets
+/db
 
-/index
+/assets
 /images
 
-/target
+/models
+
+target
+__pycache__
+
+kernel.errors.txt

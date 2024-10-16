@@ -12,6 +12,7 @@ lopdf = "0.34.0"
 openvino = "0.7.3"
 pdf = "0.9.0"
 pdf-extract = "0.7.10"
+pyo3 = { version = "0.22.4", features = ["auto-initialize"] }
 reqwest = "0.12.8"
 rusty-tesseract = "1.1.10"
 serde_json = "1.0.128"
