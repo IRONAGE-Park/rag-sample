@@ -13,4 +13,6 @@
 target
 __pycache__
 
+.env
+
 kernel.errors.txt

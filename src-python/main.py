@@ -1,16 +1,22 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import OpenVINOBgeEmbeddings
 
 from core.vector_store import VectorStore
 
 from core.loader.pdf import get_document_from_pdf
 from core.loader.image import get_document_from_image
 
-embeddings_model = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-m3",
-    model_kwargs={"device": "cpu"},
-    encode_kwargs={"normalize_embeddings": True},
+embeddings_model = OpenVINOBgeEmbeddings(
+    model_name_or_path="D:\\Intel\\ov_bge-m3",
+    model_kwargs={"device": "NPU", "compile": False},
+    encode_kwargs={
+        "mean_pooling": False,
+        "normalize_embeddings": True,
+        "batch_size": 1,
+    },
 )
+embeddings_model.ov_model.reshape(1, 512)
+embeddings_model.ov_model.compile()
 
 dimensions = len(embeddings_model.embed_query("test"))
 vector_store = VectorStore(embeddings_model, dimensions)
