@@ -24,6 +24,7 @@ class ReplaceTensor(MatcherPass):
                 if root_name.find(y["name"]) != -1:
                     max_fp16 = np.array([[[[-np.finfo(np.float16).max]]]]).astype(np.float32)
                     new_tenser = ops.constant(max_fp16, Type.f32, name="Constant_4431")
+
                     root.set_arguments([root.input_value(0).node, new_tenser])
                     packed_layername_tensor_dict_list.remove(y)
 

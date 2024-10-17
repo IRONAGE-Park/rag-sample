@@ -13,8 +13,8 @@ async fn main() {
     println!("File Query: {query} (Default: .)");
 
     // 2. 쿼리에 해당하는 파일들을 가져오기
-    let files = native::search_local_files_by_query(query.to_string())
-        .expect("Failed to search files");
+    let files =
+        native::search_local_files_by_query(query.to_string()).expect("Failed to search files");
     let files = files
         .iter()
         // 2-1. 존재하는 파일만 필터링
@@ -41,16 +41,16 @@ async fn main() {
                 initalize_module.getattr("initialize_vision_model")?.into();
             let initialize_text_decoder: Py<PyAny> =
                 initalize_module.getattr("initialize_text_decoder")?.into();
-    
+
             let path = path.strip_prefix("file:").unwrap_or(path);
-    
+
             let arg = PyTuple::new_bound(py, &[path]);
             initialize_vision_model.call1(py, arg)?;
             initialize_text_decoder.call0(py)?;
             Ok(())
         });
     }
-    
+
     let time = std::time::SystemTime::now();
     // 4. 파일들을 `Python`으로 전달하여 `Vector Store`에 저장
     let success_length: PyResult<usize> = Python::with_gil(|py| {
@@ -92,7 +92,7 @@ async fn main() {
         )?;
         let pdf_embed_func: Py<PyAny> = module.getattr("pdf_embed")?.into();
         let image_embed_func: Py<PyAny> = module.getattr("image_embed")?.into();
-    
+
         let success_list = files
             .iter()
             .filter(|(name, path, _)| {
@@ -107,7 +107,7 @@ async fn main() {
                 .is_ok()
             })
             .collect::<Vec<_>>();
-    
+
         Ok(success_list.len())
     });
 

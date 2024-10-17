@@ -1,18 +1,19 @@
-from langchain_community.vectorstores import FAISS
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
+from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import OpenVINOBgeEmbeddings
 from langchain_community.document_transformers import LongContextReorder
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain.retrievers.multi_query import LineListOutputParser, MultiQueryRetriever
+
+import openvino.properties as properties
+import openvino.properties.hint as hints
+import openvino.properties.streams as streams
 
 from operator import itemgetter
 
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -33,7 +34,23 @@ def query(file_path: str, query: str):
         file_path, embeddings_model, allow_dangerous_deserialization=True
     )
 
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+    llm = HuggingFacePipeline.from_model_id(
+        model_id="D:\\Intel\\ov_EXAONE-3.0-7.8B-Instruct",
+        task="text-generation",
+        backend="openvino",
+        model_kwargs={
+            "device": "GPU",
+            "ov_config": {
+                hints.performance_mode(): hints.PerformanceMode.LATENCY,
+                streams.num(): "1",
+                properties.cache_dir(): ""
+            },
+            "trust_remote_code": True
+        },
+        pipeline_kwargs={"max_new_tokens": 2}
+    )
+    if llm.pipeline.tokenizer.eos_token_id:
+        llm.pipeline.tokenizer.pad_token_id = llm.pipeline.tokenizer.eos_token_id
 
     multi_query_prompt = PromptTemplate.from_template(
         template="""You are an AI language model assistant. Your task is to generate five
@@ -61,7 +78,7 @@ def query(file_path: str, query: str):
     multi_query_retriever = MultiQueryRetriever(
         llm_chain=multi_query_chain,
         parser_key="lines",
-        retriever=vector_store.as_retriever(search_kwargs={"k": 20}),
+        retriever=vector_store.as_retriever(search_kwargs={"k": 2}),
     )
 
     system_prompt = (
@@ -94,8 +111,6 @@ def query(file_path: str, query: str):
     )
 
     response = chain.invoke(input=query)
-    response = chain.astream(input=query)
-
 
     print("Answer : ", response)
 
